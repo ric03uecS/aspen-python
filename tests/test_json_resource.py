@@ -31,6 +31,15 @@ def test_json_defaults_to_application_json_for_dynamic_json():
                    ).headers['Content-Type']
     assert actual == expected, actual
 
+def test_json_defaults_to_application_javascript_for_jsonp():
+    expected = 'application/javascript'
+    actual = check( "enable_jsonp=True[----]\n"
+                    "response.body = {'Greetings': 'program!'}"
+                  , filename="foo.json"
+                  , body=False
+                   ).headers['Content-Type']
+    assert actual == expected, actual
+
 def test_json_content_type_is_configurable_for_static_json():
     configure_aspen_py = 'website.media_type_json = "floober/blah"'
     expected = 'floober/blah'

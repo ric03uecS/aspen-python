@@ -67,6 +67,26 @@ browser:</p>
 {{ screenshot("json") }}
 
 
+<h3>JSONP and CORS</h3>
+
+<p>Aspen supports both <a href="https://en.wikipedia.org/wiki/JSONP">JSONP</a>
+and <a
+    href="http://en.wikipedia.org/wiki/Cross-origin_resource_sharing">CORS</a>
+to enable your JSON endpoints to be usable from other domains. These are
+optional features that you can enable per-endpoint like so:</p>
+
+<pre>enable_jsonp = True
+enable_cors = True
+\[----]
+response.body = {'Greetings': 'program!'}
+</pre>
+
+<p>With the <code>enable_jsonp</code> variable set you'll be able to hit the
+endpoint with <code>?callback=myFunc</code> as the querystring to get back a
+JSONP response, and with <code>enable_cors</code> Aspen will set the
+<code>Access-Control-Allow-Origin</code> header to <code>*</code>.</p>
+
+
 <h3>Configuring Content-Type</h3>
 
 <p>By default Aspen sets <code>Content-Type</code> to

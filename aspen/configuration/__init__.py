@@ -73,6 +73,7 @@ KNOBS = \
     , 'list_directories':   (False, parse.yes_no)
     , 'media_type_default': ('text/plain', parse.media_type)
     , 'media_type_json':    ('application/json', parse.media_type)
+    , 'media_type_jsonp':   ('application/javascript', parse.media_type)
     , 'renderer_default':   ('tornado', parse.renderer)
     , 'show_tracebacks':    (False, parse.yes_no)
      }

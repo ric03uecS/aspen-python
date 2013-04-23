@@ -124,6 +124,11 @@ def OptionParser():
                                "resources [application/json]")
                        , default=DEFAULT
                         )
+    extended.add_option( "--media_type_jsonp"
+                       , help=("this is set as the Content-Type of JSONP "
+                               "resources [application/javascript]")
+                       , default=DEFAULT
+                        )
     extended.add_option( "--renderer_default"
                     , help=( "the renderer to use by default; one of "
                            + "{%s}" % ','.join(aspen.RENDERERS)
