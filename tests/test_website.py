@@ -54,6 +54,12 @@ def test_autoindex_response_is_returned():
     body = handle('/', '--list_directories=TrUe').body
     assert 'README' in body, body
 
+def test_issue160_autoindex_doesnt_have_double_slash():
+    mk('cheese')
+    body = handle('/', '--list_directories=TrUe').body
+    import pdb; pdb.set_trace()
+    assert 'README' in body, body
+
 def test_resources_can_import_from_dot_aspen():
     mk( '.aspen'
       , ('.aspen/foo.py', 'bar = "baz"')
