@@ -8,6 +8,7 @@ from StringIO import StringIO
 
 from aspen.http.request import Request
 from aspen.testing import StubWSGIRequest
+from aspen.testing.fsfix import FilesystemFixture
 
 BOUNDARY = 'BoUnDaRyStRiNg'
 MULTIPART_CONTENT = 'multipart/form-data; boundary=%s' % BOUNDARY
@@ -83,6 +84,7 @@ class TestClient(object):
     def __init__(self, website):
         self.cookies = SimpleCookie()
         self.test_website = website
+        self.mk = FilesystemFixture(website.www_root)
 
     def get_request(self, path, method="GET", body=None,
                     **extra):

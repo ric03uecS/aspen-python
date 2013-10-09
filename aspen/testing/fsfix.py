@@ -1,103 +1,93 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
 import os
 import sys
 import shutil
 import tempfile
-import traceback
-from os.path import dirname, isdir, join, realpath
-from aspen import resources, sockets
-
-CWD = os.getcwd()
-FSFIX = os.path.realpath(os.path.join(tempfile.gettempdir(), b'fsfix'))
+from os.path import dirname, isdir, realpath
 
 
-def convert_path(path):
+def _convert_path(path):
     """Given a Unix path, convert it for the current platform.
     """
     return os.sep.join(path.split('/'))
 
-def convert_paths(paths):
+
+def _convert_paths(paths):
     """Given a tuple of Unix paths, convert them for the current platform.
     """
-    return tuple([convert_path(p) for p in paths])
+    return tuple([_convert_path(p) for p in paths])
 
-def mk(*treedef):
-    """Given a treedef, build a filesystem fixture in FSFIX.
 
-    treedef is a sequence of strings and tuples. If a string, it is interpreted
-    as a path to a directory that should be created. If a tuple, the first
-    element is a path to a file, the second is the contents of the file. We do
-    it this way to ease cross-platform testing.
-
+def _get_tempdir():
+    """Return a temporary directory we can use for our fixture.
     """
-    root = FSFIX
-    os.mkdir(root)
-    for item in treedef:
-        if isinstance(item, basestring):
-            path = convert_path(item.lstrip('/'))
-            path = os.sep.join([root, path])
-            os.makedirs(path)
-        elif isinstance(item, tuple):
-            filepath, contents = item
-            path = convert_path(filepath.lstrip('/'))
-            path = os.sep.join([root, path])
-            parent = dirname(path)
-            if not isdir(parent):
-                os.makedirs(parent)
-            file(path, 'w').write(contents)
+    return os.path.realpath(os.path.join(tempfile.gettempdir(), 'fsfix'))
 
-def fix(path=b''):
-    """Given a relative path, return an absolute path under FSFIX.
 
-    The incoming path is in UNIX form (/foo/bar.html). The outgoing path is in
-    native form, with symlinks removed.
+class FilesystemFixture(object):
 
-    """
-    path = os.sep.join([FSFIX] + path.split(b'/'))
-    return realpath(path)
+    def __init__(self, root=None):
+        self.root = root if root is not None else _get_tempdir()
+        self.cwd = None     # set in __call__
+        self.teardown()     # start clean
 
-def rm():
-    """Remove the filesystem fixture at FSFIX.
-    """
-    if isdir(FSFIX):
-        shutil.rmtree(FSFIX)
 
-def teardown_function(function):
-    teardown()
+    def __call__(self, *treedef):
+        """Given a treedef, build a filesystem fixture in self.root.
 
-def teardown():
-    """Standard teardown function.
+        treedef is a sequence of strings and tuples. If a string, it is interpreted
+        as a path to a directory that should be created. If a tuple, the first
+        element is a path to a file, the second is the contents of the file. We do
+        it this way to ease cross-platform testing.
 
-    - reset the current working directory
-    - remove FSFIX = %{tempdir}/fsfix
-    - reset Aspen's global state
-    - remove '.aspen' from sys.path
-    - remove 'foo' from sys.modules
-    - clear out sys.path_importer_cache
-    - clear out execution.extras
+        """
+        self.cwd = os.getcwd()
+        os.mkdir(self.root)
+        os.chdir(self.root)
+        for item in treedef:
+            if isinstance(item, basestring):
+                path = _convert_path(item.lstrip('/'))
+                path = os.sep.join([self.root, path])
+                os.makedirs(path)
+            elif isinstance(item, tuple):
+                filepath, contents = item
+                path = _convert_path(filepath.lstrip('/'))
+                path = os.sep.join([self.root, path])
+                parent = dirname(path)
+                if not isdir(parent):
+                    os.makedirs(parent)
+                file(path, 'w').write(contents)
 
-    """
-    os.chdir(CWD)
-    rm()
-    # Reset some process-global caches. Hrm ...
-    resources.__cache__ = {}
-    sockets.__sockets__ = {}
-    sockets.__channels__ = {}
-    sys.path_importer_cache = {} # see test_weird.py
-    if 'fsfix' in sys.path[0]:
-        sys.path = sys.path[1:]
-    if 'foo' in sys.modules:
-        del sys.modules['foo']
-    import aspen.execution
-    aspen.execution.clear_changes()
 
-teardown() # start clean
+    def teardown(self):
+        """Roll back fixture.
 
-def path(*parts):
-    """Given relative path parts, convert to absolute path on the filesystem.
-    """
-    return realpath(join(*parts))
+        - reset the current working directory
+        - remove self.root from the filesystem
+        - remove self.root from sys.path
+
+        """
+        if self.cwd is not None:
+            os.chdir(self.cwd)
+        self.remove()
+        while self.root in sys.path:
+            sys.path.pop(self.root)
+
+    tear_down = tearDown = teardown
+
+
+    def resolve(self, path=''):
+        """Given a relative path, return an absolute path under self.root.
+
+        The incoming path is in UNIX form (/foo/bar.html). The outgoing path is in
+        native form, with symlinks removed.
+
+        """
+        path = os.sep.join([self.root] + path.split('/'))
+        return realpath(path)
+
+
+    def remove(self):
+        """Remove the filesystem fixture at self.root.
+        """
+        if isdir(self.root):
+            shutil.rmtree(self.root)
